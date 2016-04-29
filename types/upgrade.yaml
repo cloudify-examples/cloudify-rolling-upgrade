@@ -1,0 +1,9 @@
+node_types:
+
+  upgradeable_webapp:
+    derived_from: cloudify.nodes.Root
+    interfaces:
+      webapp_upgrade:
+        upgrade: {}
+        rollback: {}
+ 

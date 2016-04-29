@@ -1,0 +1,91 @@
+tosca_definitions_version: cloudify_dsl_1_2
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/3.3.1/types.yaml
+  - http://www.getcloudify.org/spec/openstack-plugin/1.3.1/plugin.yaml
+  - types/upgrade.yaml
+  - types/haproxy.yaml
+  - types/nodejs.yaml
+
+inputs:
+
+  image:
+    description: >
+      Image to be used when launching agent VM's
+  flavor:
+    description: >
+      Flavor of the agent VM's
+  agent_user:
+    description: >
+      User for connecting to agent VM's
+  
+node_templates:
+  nodejs_host:
+    type: cloudify.openstack.nodes.Server
+    instances:
+      deploy: 2
+    properties:
+      cloudify_agent:
+        user: {get_input: agent_user}
+      image: {get_input: image}
+      flavor: {get_input: flavor}
+    relationships:
+      - target: nodejs_security_group
+        type: cloudify.openstack.server_connected_to_security_group
+
+  nodejs_security_group:
+    type: cloudify.openstack.nodes.SecurityGroup
+    properties:
+      security_group:
+        name: nodejs_security_group
+      rules:
+        - remote_ip_prefix: 0.0.0.0/0
+          port: 8080
+
+  nodejs:
+    type: nodejs.nodes.NodeJSServer
+    relationships:
+      - target: nodejs_host
+        type: cloudify.relationships.contained_in
+
+  haproxy_host:
+    type: cloudify.openstack.nodes.Server
+    properties:
+      cloudify_agent:
+        user: {get_input: agent_user}
+      image: {get_input: image}
+      flavor: {get_input: flavor}
+
+  haproxy:
+    type: haproxy.nodes.Proxy
+    relationships:
+      - target: haproxy_host
+        type: cloudify.relationships.contained_in
+
+  nodejs_app:
+    type: nodejs.nodes.NodeJSApplicationModule
+    properties:
+      application_url: http://185.98.149.42:8000/upgrade-test-1.0.tgz
+    relationships:
+      - type: node_contained_in_nodejs
+        target: nodejs
+      - type: app_connected_to_haproxy
+        target: haproxy
+
+workflows:
+  webapp_upgrade:
+    mapping: scripts/upgrade_workflow.py
+    parameters:
+      version:
+        description: version of upgraded app.  An float for easy comparison
+      url:
+        description: location of app
+      pause:
+        description: number of seconds to pause between each instance upgrade
+        default: 0
+      percentage:
+        description: optional to perform a/b upgrade
+        default: 100
+      lb_relationship:
+        description: the relationship name for the load balancer connection
+        default: cloudify.relationships.connected_to

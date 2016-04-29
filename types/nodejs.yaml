@@ -1,0 +1,48 @@
+node_types:
+
+  nodejs.nodes.NodeJSServer:
+    derived_from: cloudify.nodes.ApplicationServer
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: scripts/nodejs/install-nodejs.sh
+
+  nodejs.nodes.NodeJSApplicationModule:
+    derived_from: upgradeable_webapp
+    properties:
+      port:
+        description: Web application port
+        type: integer
+        default: 8080
+      application_url:
+        description: >
+          URL to an archive containing the application source.
+        default: 
+      startup_script:
+        description: >
+          This script will be used to start the nodejs application.
+          The path is relative to the top level single directory inside
+          the archive
+        type: string
+        default: server.js
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        configure: scripts/nodejs/install-nodejs-app.sh
+        start: scripts/nodejs/start-nodejs-app.sh
+        stop: scripts/nodejs/stop-nodejs-app.sh
+      webapp_upgrade:
+        upgrade:
+          implementation: "scripts/nodejs/upgrade.py"
+          inputs:
+            version:
+              description: version upgrading to (float)
+        rollback:
+          implementation: "scripts/nodejs/rollback.py"
+
+
+relationships:
+  node_contained_in_nodejs:
+    derived_from: cloudify.relationships.contained_in
+    target_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        preconfigure: scripts/nodejs/set-nodejs-root.sh
+
