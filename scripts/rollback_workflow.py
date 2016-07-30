@@ -1,5 +1,5 @@
 #
-# Rolling upgrade workflow.  Process nodes one by one.
+# Rolling rollback workflow.  Process node instances one by one.
 #
 import time
 import sys
@@ -63,7 +63,7 @@ def process_instances(instances,rollback):
     for rel in instance.relationships:
       if(rel.relationship.is_derived_from(p['lb_relationship'])):
         ctx.logger.info("unlinking {}\n".format(instance.id))
-        ret=rel.execute_target_operation("cloudify.interfaces.relationship_lifecycle.unlink").get()
+        rel.execute_target_operation("cloudify.interfaces.relationship_lifecycle.unlink").get()
         break
       
     if(not rollback): 
@@ -84,14 +84,14 @@ def process_instances(instances,rollback):
       time.sleep(p['pause'])
 
 
-def upgrade():
+def rollback():
   instances=get_targets(version=p["fromver"])
 
   try:
-    process_instances(instances,False)
+    process_instances(instances,True)
   except NameError as ex:
     ctx.logger.error("caught exception: {}\n".format(ex))
     process_instances(instances,True)
     
 
-upgrade()
+rollback()

@@ -8,8 +8,7 @@ from urlparse import urlparse
 #
 # Utility to perform an upgrade on a node
 #
-
-ctx.logger.info("upgrade.py called: version={} url={}\n".format(inputs['version'],inputs['url']))
+ctx.logger.info("upgrade.py called: inputs={}\n".format(inputs))
 
 # check version, skip if supplied version is not greater than existing
 version=ctx.instance.runtime_properties['app_version'] or 1.0
@@ -27,7 +26,7 @@ if(version < inputs['version']):
   ctx.logger.info("wget {} -O /tmp/{}".format(inputs['url'],newfile))
   ret=subprocess.call("/usr/bin/wget {} -O /tmp/{}".format(inputs['url'],newfile),shell=True)
   if(ret!=0):
-    raise RecoverableError("download failed from url:{}".format(url))
+    raise RecoverableError("download failed from url:{}".format(inputs['url']))
 
   # replace existing with new
   ctx.logger.info("replacing app")
@@ -43,8 +42,8 @@ if(version < inputs['version']):
 
   subprocess.call("kill {}".format(pid),shell=True)
 
-  with open("/dev/null","w") as f:
-    proc=subprocess.Popen(["nohup","{}/bin/node".format(ctx.instance.runtime_properties['nodejs_binaries_path']),"{}/server.js".format(ctx.instance.runtime_properties['nodejs_source_path'])],stdout=f, stderr=f, env={"NODEJS_PORT":str(ctx.node.properties['port'])})
+  with open("/tmp/nodejs.out","w") as f:
+    proc=subprocess.Popen(["nohup","{}/bin/node".format(ctx.instance.runtime_properties['nodejs_binaries_path']),"{}/server.js".format(ctx.instance.runtime_properties['nodejs_source_path'])],stdout=f, stderr=f, env={"NODECELLAR_PORT":str(ctx.node.properties['port'])})
     # store new pid
     ctx.instance.runtime_properties['pid']=proc.pid
     # update version
@@ -52,6 +51,7 @@ if(version < inputs['version']):
     ctx.instance.runtime_properties['app_version']=inputs['version']
     # save previous version for possible rollback
     ctx.instance.runtime_properties['app_prev_version']=old_version
+    ctx.instance.update()
 
 else:
   ctx.logger.info("current version: {} : supplied version {}: NOT UPGRADING".format(version,inputs['version']))

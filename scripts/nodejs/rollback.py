@@ -27,10 +27,10 @@ else:
   subprocess.call("kill {}".format(pid),shell=True)
 
   with open("/dev/null","w") as f:
-    proc=subprocess.Popen(["nohup","{}/bin/node".format(ctx.instance.runtime_properties['nodejs_binaries_path']),"{}/server.js".format(ctx.instance.runtime_properties['nodejs_source_path'])],stdout=f, stderr=f, env={"NODEJS_PORT":str(ctx.node.properties['port'])})
+    proc=subprocess.Popen(["nohup","{}/bin/node".format(ctx.instance.runtime_properties['nodejs_binaries_path']),"{}/server.js".format(ctx.instance.runtime_properties['nodejs_source_path'])],stdout=f, stderr=f, env={"NODECELLAR_PORT":str(ctx.node.properties['port'])})
     # store new pid
     ctx.instance.runtime_properties['pid']=proc.pid
 
   # restore version #
   ctx.instance.runtime_properties['app_version']=ctx.instance.runtime_properties['app_prev_version']
-
+  ctx.instance.update()

@@ -32,11 +32,10 @@ node_types:
       webapp_upgrade:
         upgrade:
           implementation: "scripts/nodejs/upgrade.py"
-          inputs:
-            version:
-              description: version upgrading to (float)
         rollback:
           implementation: "scripts/nodejs/rollback.py"
+        store_version:
+          implementation: "scripts/nodejs/store.py"
 
 
 relationships:

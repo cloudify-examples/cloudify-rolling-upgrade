@@ -6,4 +6,4 @@ node_types:
       webapp_upgrade:
         upgrade: {}
         rollback: {}
- 
+        version: {} 
