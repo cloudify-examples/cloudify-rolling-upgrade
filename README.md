@@ -1,3 +1,5 @@
+[![Build Status](https://circleci.com/gh/cloudify-examples/cloudify-rolling-upgrade.svg?style=shield&circle-token=:circle-token)](https://circleci.com/gh/cloudify-examples/cloudify-rolling-upgrade)
+
 # Rolling Upgrade Example Project
 ___
 ## Overview/Requirements
