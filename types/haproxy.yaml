@@ -64,7 +64,7 @@ node_types:
             invocation:
               default:
                 function: remove_backend_op
-        remove_backend:
+        add_backend:
           implementation: scripts/haproxy/haproxy.py
           inputs:
             invocation:
