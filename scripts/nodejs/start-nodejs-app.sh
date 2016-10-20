@@ -59,18 +59,18 @@ STARTUP_SCRIPT=$(ctx node properties startup_script)
 
 COMMAND="${NODEJS_BINARIES_PATH}/bin/node ${NODEJS_SOURCE_PATH}/${STARTUP_SCRIPT}"
 
-export NODEJS_PORT=$(ctx node properties port)
+export NODECELLAR_PORT=$(ctx node properties port)
 export MONGO_HOST=$(ctx instance runtime_properties mongo_ip_address)
 export MONGO_PORT=$(ctx instance runtime_properties mongo_port)
 
 ctx logger info "MongoDB is located at ${MONGO_HOST}:${MONGO_PORT}"
-ctx logger info "Starting nodejs application on port ${NODEJS_PORT}"
+ctx logger info "Starting nodejs application on port ${NODECELLAR_PORT}"
 
 ctx logger info "${COMMAND}"
 nohup ${COMMAND} > /dev/null 2>&1 &
 PID=$!
 
-wait_for_server ${NODEJS_PORT} 'NodeJS App'
+wait_for_server ${NODECELLAR_PORT} 'NodeJS App'
 
 # this runtime porperty is used by the stop-nodejs-app.sh script.
 ctx instance runtime_properties pid ${PID}

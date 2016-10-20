@@ -20,6 +20,7 @@ inputs:
       User for connecting to agent VM's
   
 node_templates:
+
   nodejs_host:
     type: cloudify.openstack.nodes.Server
     instances:
@@ -55,6 +56,23 @@ node_templates:
         user: {get_input: agent_user}
       image: {get_input: image}
       flavor: {get_input: flavor}
+    relationships:
+      - target: haproxy_ip
+        type: cloudify.openstack.server_connected_to_floating_ip
+      - target: haproxy_security_group
+        type: cloudify.openstack.server_connected_to_security_group
+
+  haproxy_ip:
+    type: cloudify.openstack.nodes.FloatingIP
+
+  haproxy_security_group:
+    type: cloudify.openstack.nodes.SecurityGroup
+    properties:
+      security_group:
+        name: haproxy_security_group
+      rules:
+        - remote_ip_prefix: 0.0.0.0/0
+          port: { get_property: [ haproxy, frontend_port ] }
 
   haproxy:
     type: haproxy.nodes.Proxy
@@ -65,17 +83,34 @@ node_templates:
   nodejs_app:
     type: nodejs.nodes.NodeJSApplicationModule
     properties:
-      application_url: http://185.98.149.42:8000/upgrade-test-1.0.tgz
+      application_url: http://manager:8000/upgrade-test-1.0.tgz
     relationships:
       - type: node_contained_in_nodejs
         target: nodejs
       - type: app_connected_to_haproxy
         target: haproxy
+      - type: cloudify.relationships.depends_on
+        target: code_server
+
+  code_server:
+    type: cloudify.nodes.Compute
+    properties:
+      install_agent: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        start:
+          executor: central_deployment_agent
+          implementation: scripts/codeserver/start.py
+        stop:
+          executor: central_deployment_agent
+          implementation: scripts/codeserver/stop.py
 
 workflows:
   webapp_upgrade:
     mapping: scripts/upgrade_workflow.py
     parameters:
+      fromver:
+        description: upgrade instances with this version
       version:
         description: version of upgraded app.  An float for easy comparison
       url:
@@ -89,3 +124,27 @@ workflows:
       lb_relationship:
         description: the relationship name for the load balancer connection
         default: cloudify.relationships.connected_to
+  webapp_rollback:
+    mapping: scripts/rollback_workflow.py
+    parameters:
+      fromver:
+        description: rollback instances with this version
+      node_ids:
+        description: nodes to roll back (all instances)
+        default: []
+      instance_ids:
+        description: node instances to roll back
+        default: []
+      pause:
+        description: number of seconds to pause between each instance upgrade
+        default: 0
+      lb_relationship:
+        description: the relationship name for the load balancer connection
+        default: cloudify.relationships.connected_to
+
+outputs:
+  endpoint:
+   description: Web application endpoint
+   value:
+     ip_address: { get_attribute: [ haproxy_ip, floating_ip_address ] }
+     port: { get_property: [ haproxy, frontend_port ] }

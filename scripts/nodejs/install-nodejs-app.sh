@@ -58,6 +58,11 @@ function version(){
 TEMP_DIR='/tmp'
 NODEJS_BINARIES_PATH=$(ctx instance runtime_properties nodejs_binaries_path)
 APPLICATION_URL=$(ctx node properties application_url)
+
+if [[ $APPLICATION_URL =~ .*/manager:.* ]]; then
+  APPLICATION_URL=$(echo $APPLICATION_URL|sed "s,manager,$MANAGEMENT_IP,g")
+fi
+
 AFTER_SLASH=${APPLICATION_URL##*/}
 NODEJS_ARCHIVE_NAME=${AFTER_SLASH%%\?*}
 APP_VERSION=$(version)

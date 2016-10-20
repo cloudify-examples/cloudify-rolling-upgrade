@@ -38,6 +38,8 @@ node_types:
               default: {}
         rollback:
           implementation: "scripts/nodejs/rollback.py"
+        store_version:
+          implementation: "scripts/nodejs/store.py"
 
 
 relationships:
